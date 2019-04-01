@@ -27,10 +27,6 @@ int task_create (task_t *task,			// descritor da nova tarefa
     ucontext_t context;
     getcontext (&context) ;
 
-    if (!task) {
-        task = malloc(sizeof(task_t)) ;
-    }
-
     last_task_id++;
     task->id = last_task_id;
     task->stack = malloc(sizeof(STACKSIZE)) ;
@@ -62,10 +58,7 @@ void task_create_main (task_t *task)			// descritor da nova tarefa
     ucontext_t context;
     getcontext (&context) ;
 
-    if (!task) {
-        task = malloc(sizeof(task_t)) ;
-    }
-
+    task->id = 0;
     task->stack = malloc(sizeof(STACKSIZE)) ;
     if (task->stack)
     {
@@ -93,6 +86,7 @@ void task_exit (int exitCode)
 int task_switch (task_t *task) 
 {
     if (!has_switched_task) { // first task switch
+        main_task = malloc(sizeof(task_t)) ;
         task_create_main(main_task);
         current_task = main_task;
         has_switched_task = 1;
@@ -100,6 +94,10 @@ int task_switch (task_t *task)
 
     task_t * previous_task = current_task;
     current_task = task;
+
+    printf("\nTASK SWITCHING\n");
+    printf("%p\n", &(previous_task->context));
+    printf("%p\n", &(task->context));
 
     swapcontext (&(previous_task->context), &(task->context));
 
