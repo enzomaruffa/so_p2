@@ -24,19 +24,18 @@ int task_create (task_t *task,			// descritor da nova tarefa
                  void (*start_func)(void *),	// funcao corpo da tarefa
                  void *arg) // argumentos para a tarefa
 {   
-    ucontext_t context;
-    getcontext (&context) ;
+    getcontext (&task->context) ;
 
     last_task_id++;
     task->id = last_task_id;
-    task->stack = malloc(sizeof(STACKSIZE)) ;
+    task->stack = malloc(STACKSIZE) ;
 
     if (task->stack)
     {
-        context.uc_stack.ss_sp = task->stack ;
-        context.uc_stack.ss_size = STACKSIZE ;
-        context.uc_stack.ss_flags = 0 ;
-        context.uc_link = 0 ;
+        task->context.uc_stack.ss_sp = task->stack ;
+        task->context.uc_stack.ss_size = STACKSIZE ;
+        task->context.uc_stack.ss_flags = 0 ;
+        task->context.uc_link = 0 ;
     }
     else
     {
@@ -45,27 +44,24 @@ int task_create (task_t *task,			// descritor da nova tarefa
     }
 
     if (start_func) {
-        makecontext (&context, (void*)(*start_func), 1, arg) ;
+        makecontext (&task->context, (void*)(*start_func), 1, arg) ;
     }
-
-    task->context = context ; 
 
     return task->id;   
 }			
 
 void task_create_main (task_t *task)			// descritor da nova tarefa
 {   
-    ucontext_t context;
-    getcontext (&context) ;
+    getcontext (&task->context) ;
 
     task->id = 0;
-    task->stack = malloc(sizeof(STACKSIZE)) ;
+    task->stack = malloc(STACKSIZE) ;
     if (task->stack)
     {
-        context.uc_stack.ss_sp = task->stack ;
-        context.uc_stack.ss_size = STACKSIZE ;
-        context.uc_stack.ss_flags = 0 ;
-        context.uc_link = 0 ;
+        task->context.uc_stack.ss_sp = task->stack ;
+        task->context.uc_stack.ss_size = STACKSIZE ;
+        task->context.uc_stack.ss_flags = 0 ;
+        task->context.uc_link = 0 ;
     }
     else
     {
@@ -73,7 +69,6 @@ void task_create_main (task_t *task)			// descritor da nova tarefa
         exit (1) ;
     }
 
-    task->context = context ; 
 }			
 
 // Termina a tarefa corrente, indicando um valor de status encerramento
@@ -86,7 +81,7 @@ void task_exit (int exitCode)
 int task_switch (task_t *task) 
 {
     if (!has_switched_task) { // first task switch
-        main_task = malloc(sizeof(task_t)) ;
+        main_task = (task_t *) malloc(sizeof(task_t)) ;
         task_create_main(main_task);
         current_task = main_task;
         has_switched_task = 1;
@@ -94,10 +89,6 @@ int task_switch (task_t *task)
 
     task_t * previous_task = current_task;
     current_task = task;
-
-    printf("\nTASK SWITCHING\n");
-    printf("%p\n", &(previous_task->context));
-    printf("%p\n", &(task->context));
 
     swapcontext (&(previous_task->context), &(task->context));
 
